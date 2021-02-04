@@ -22,7 +22,7 @@
   install.packages("GFF")
   install.packages("Rtools")
   install.packages("ape")
-  
+
   # Commented these out because I'm not sure if they are really needed
   #install.packages("BiocManager")
   #BiocManager::install("genbankr")
@@ -30,13 +30,14 @@
   
   library(circlize)
   library(ape)
+  library(dplyr)
   
 ########################################################
 ########################################################
   
 # Section 2: Import and manipulate the data for extended figure 4 
   
-  setwd("C:/Users/tyler/Desktop/test")
+  setwd("C:/Users/tyler/Desktop/test1")
   
   
   # read idea from from https://www.rdocumentation.org/packages/ape/versions/5.4-1/topics/read.gff
@@ -56,9 +57,60 @@
   PRG_GEVE1 <- subset(PRG_GEVE1,select = +c(seqid,start,end,attributes))
   PRG_GEVE2 <- subset(PRG_GEVE2,select = +c(seqid,start,end,attributes))
   
- 
- 
+  # Convert factors to character
+  AUG_GEVE1$seqid <- as.character(AUG_GEVE1$seqid)
+  PRG_GEVE1$seqid <- as.character(PRG_GEVE1$seqid)
+  AUG_GEVE2$seqid <- as.character(AUG_GEVE2$seqid)
+  PRG_GEVE2$seqid <- as.character(PRG_GEVE2$seqid)
   
+  
+  
+  # Remove the prodigal genes which overlap with Augustus for GEVE1
+  m=1
+  for(i in AUG_GEVE1$seqid){
+    n=1
+    for(j in PRG_GEVE1$seqid){
+      if(n<nrow(PRG_GEVE1)){
+        if(i == j){
+          if(PRG_GEVE1[n,2]>AUG_GEVE1[m,2] && PRG_GEVE1[n,3]<AUG_GEVE1[m,3]){
+            PRG_GEVE1 <- PRG_GEVE1[-c(n),]
+          }
+          else if(PRG_GEVE1[n,2]>AUG_GEVE1[m,2] && PRG_GEVE1[n,2]<AUG_GEVE1[m,3]){
+            PRG_GEVE1 <- PRG_GEVE1[-c(n),]
+          }
+          else if(PRG_GEVE1[n,3]<AUG_GEVE1[m,3] && PRG_GEVE1[n,3]>AUG_GEVE1[m,2]){
+            PRG_GEVE1 <- PRG_GEVE1[-c(n),]
+          }
+        }
+      }
+      n=n+1
+      }
+    m=m+1
+  }
+  
+  # Remove the prodigal genes which overlap with Augustus for GEVE2
+  m=1
+  for(i in AUG_GEVE2$seqid){
+    n=1
+    for(j in PRG_GEVE2$seqid){
+      if(n<nrow(PRG_GEVE2)){
+        if(i == j){
+          if(PRG_GEVE2[n,2]>AUG_GEVE2[m,2] && PRG_GEVE2[n,3]<AUG_GEVE2[m,3]){
+            PRG_GEVE2 <- PRG_GEVE2[-c(n),]
+          }
+          else if(PRG_GEVE2[n,2]>AUG_GEVE2[m,2] && PRG_GEVE2[n,2]<AUG_GEVE2[m,3]){
+            PRG_GEVE2 <- PRG_GEVE2[-c(n),]
+          }
+          else if(PRG_GEVE2[n,3]<AUG_GEVE2[m,3] && PRG_GEVE2[n,3]>AUG_GEVE2[m,2]){
+            PRG_GEVE2 <- PRG_GEVE2[-c(n),]
+          }
+        }
+      }
+      n=n+1
+    }
+    m=m+1
+  }
+    
   
 ########################################################
 ########################################################
@@ -72,46 +124,47 @@
   circos.genomicInitialize(AUG_GEVE1,plotType=NULL)
   #circos.track(ylim = c(0, 1), bg.border = "black", track.height = 0.1)
   a1 = max(tapply(AUG_GEVE1$attributes,AUG_GEVE1$seqid, function(x) length(unique(x))))
-  circos.genomicTrack(AUG_GEVE1, ylim = c(0.5, n + 0.5), 
+  circos.genomicTrack(AUG_GEVE1, ylim = c(0.5, a1 + 0.5), 
                       panel.fun = function(region, value, ...) {
                         all_tx = unique(value$attributes)
                         for(i in seq_along(all_tx)) {
                           l = value$attributes == all_tx[i]
                           current_tx_start = min(region[l, 1])
                           current_tx_end = max(region[l, 2])
-                          circos.lines(x=c(current_tx_start, current_tx_end),y=c(40,40), col = "brown", area=TRUE )
+                          circos.lines(x=c(current_tx_start, current_tx_end),y=c(a1,a1), col = "brown", area=TRUE )
                         }
                       }, bg.border = "black", track.height = 0.1)
   p1 = max(tapply(PRG_GEVE1$attributes,PRG_GEVE1$seqid, function(x) length(unique(x))))
-  circos.genomicTrack(PRG_GEVE1, ylim = c(0.5, n + 0.5), 
+  circos.genomicTrack(PRG_GEVE1, ylim = c(0.5, p1 + 0.5), 
                       panel.fun = function(region, value, ...) {
-                        all_tx = unique(value$attributes)
-                        for(i in seq_along(all_tx)) {
-                          l = value$attributes == all_tx[i]
+                        all_tx2 = unique(value$attributes)
+                        for(i in seq_along(all_tx2)) {
+                          l = value$attributes == all_tx2[i]
                           # for each transcript
                           current_tx_start = min(region[l, 1])
                           current_tx_end = max(region[l, 2])
-                          circos.lines(x=c(current_tx_start, current_tx_end),y=c(40,40), col = "green", area=TRUE)
+                          circos.lines(x=c(current_tx_start, current_tx_end),y=c(p1,p1), col = "green", area=TRUE)
                         }
                       }, bg.border = "black", track.height = 0.1)
+  circos.genomicTrack(ylim = c(0.5, p1 + 0.5), bg.border = "black", track.height = 0.1)
   title("C. eustigma GEVE 1")
   
   # Create GEVE 2 plot
   circos.genomicInitialize(AUG_GEVE2,plotType=NULL)
   #circos.track(ylim = c(0, 1), bg.border = "black", track.height = 0.1)
   a2 = max(tapply(AUG_GEVE2$attributes,AUG_GEVE2$seqid, function(x) length(unique(x))))
-  circos.genomicTrack(AUG_GEVE2, ylim = c(0.5, n + 0.5), 
+  circos.genomicTrack(AUG_GEVE2, ylim = c(0.5, a2 + 0.5), 
                       panel.fun = function(region, value, ...) {
                         all_tx = unique(value$attributes)
                         for(i in seq_along(all_tx)) {
                           l = value$attributes == all_tx[i]
                           current_tx_start = min(region[l, 1])
                           current_tx_end = max(region[l, 2])
-                          circos.lines(x=c(current_tx_start, current_tx_end),y=c(40,40), col = "brown", area=TRUE )
+                          circos.lines(x=c(current_tx_start, current_tx_end),y=c(a2,a2), col = "brown", area=TRUE )
                         }
                       }, bg.border = "black", track.height = 0.1)
   p2 = max(tapply(PRG_GEVE2$attributes,PRG_GEVE2$seqid, function(x) length(unique(x))))
-  circos.genomicTrack(PRG_GEVE2, ylim = c(0.5, n + 0.5), 
+  circos.genomicTrack(PRG_GEVE2, ylim = c(0.5, p2 + 0.5), 
                       panel.fun = function(region, value, ...) {
                         all_tx = unique(value$attributes)
                         for(i in seq_along(all_tx)) {
@@ -119,10 +172,18 @@
                           # for each transcript
                           current_tx_start = min(region[l, 1])
                           current_tx_end = max(region[l, 2])
-                          circos.lines(x=c(current_tx_start, current_tx_end),y=c(40,40), col = "green", area=TRUE)
+                          circos.lines(x=c(current_tx_start, current_tx_end),y=c(p2,p2), col = "green", area=TRUE)
                         }
                       }, bg.border = "black", track.height = 0.1)
   title("C. eustigma GEVE 2")
   circos.clear()
+  
+  
+  
+  
+  
+  
+  
+
   
   
